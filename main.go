@@ -22,5 +22,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println(c.GetPage("https://na.preva.com/exerciser-api//exerciser-account"))
+	log.Println(c.Index())
+	log.Println(c.FavoriteFEWorkouts())
 }

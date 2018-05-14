@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -26,6 +25,19 @@ type Settings struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Token    *Token `json:"token"`
+	UserId   uint64 `json:"user_id"`
+}
+
+func (c *PClient) GetUserId() uint64 {
+	if uid := c.Settings.UserId; uid > 0 {
+		return uid
+	}
+
+	// c.Index() ...
+	c.Settings.UserId = 1663085
+
+	c.saveCallback()
+	return c.Settings.UserId
 }
 
 func NewClient(set Settings, saveCallback func() error) (*PClient, error) {
@@ -41,19 +53,19 @@ func NewClient(set Settings, saveCallback func() error) (*PClient, error) {
 	return &c, nil
 }
 
-func (c *PClient) GetPage(page string) error {
+func (c *PClient) GetPage(page string) (string, error) {
 	req, err := http.NewRequest("GET", page, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if c.Settings.Token.TokenType != "bearer" {
 		err = c.signIn()
 		if err != nil {
-			return err
+			return "", err
 		}
 		if c.Settings.Token.TokenType != "bearer" {
-			return fmt.Errorf("token type %s !=  bearer", c.Settings.Token.TokenType)
+			return "", fmt.Errorf("token type %s !=  bearer", c.Settings.Token.TokenType)
 		}
 	}
 
@@ -62,13 +74,12 @@ func (c *PClient) GetPage(page string) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	ans, _ := ioutil.ReadAll(resp.Body)
-	log.Println(string(ans))
 
-	return nil
+	return string(ans), nil
 }
 
 func (c *PClient) signIn() error {
